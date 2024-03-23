@@ -1,14 +1,5 @@
 ---
-- name: ping test
-  hosts: all
-  become: yes
-  tasks:
-    - name: test ping
-      ansible.builtin.ping:
-      
----
-# Assume this is defined in inventory
-- name: 
+- name: test 
   hosts: webservers
   gather_facts: true
   tasks:
