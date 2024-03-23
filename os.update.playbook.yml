@@ -1,6 +1,6 @@
 ---
 - name: test 
-  hosts: webservers
+  hosts: proxmox
   gather_facts: true
   tasks:
     - name: Update apt repo and cache on all Debian/Ubuntu boxes
