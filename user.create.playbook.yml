@@ -3,18 +3,18 @@
   hosts: "{{ targethosts }}"
   gather_facts: true
   tasks:
-    - name: Check that the 'X' user is present
+    - name: Check that the '_user' user is present
       getent:
         database: passwd
         key: "{{ _user }}"
         fail_key: true
-    - name: Add a user 'X' with a bash shell, appending the group 'Y'
+    - name: Add a user '_user' with a bash shell, appending the group '_group'
       ansible.builtin.user:
         name: "{{ _user }}"
         shell: /bin/bash
         groups: "{{ group }}"
         append: yes
-    - name: Create a 2048-bit SSH key for user X in ~X/.ssh/id_rsa
+    - name: Create a 2048-bit SSH key for user _user in ~_user/.ssh/id_rsa
       ansible.builtin.user:
         name: "{{ _group }}"
         generate_ssh_key: yes
