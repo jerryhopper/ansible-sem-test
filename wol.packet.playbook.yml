@@ -1,7 +1,7 @@
 ---
 - name: Send wake on lan packet 
   hosts: "{{ targethosts }}"
-  gather_facts: true
+  gather_facts: false
   tasks:
     - name: Send a magic Wake-on-LAN packet to MAC
       community.general.wakeonlan:
