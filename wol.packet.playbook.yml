@@ -3,12 +3,12 @@
   hosts: "{{ targethosts }}"
   gather_facts: false
   tasks:
-    #- name: Send a magic Wake-on-LAN packet to MAC
-    #  community.general.wakeonlan:
-    #    mac: '{{ _MACADDR }}'
-    #    broadcast: "{{ _BROADCADDR }}"
-    #  delegate_to: localhost
-    #
+    - name: Send a magic Wake-on-LAN packet to MAC
+      community.general.wakeonlan:
+        mac: '{{ _MACADDR }}'
+        broadcast: "{{ _BROADCADDR }}"
+      delegate_to: localhost
+    
     - community.general.wakeonlan:
         mac: '{{ _MACADDR }}'
         port: 9
