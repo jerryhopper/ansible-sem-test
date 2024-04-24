@@ -1,0 +1,185 @@
+- name: "Filebeat.upgrade.playbook.yml"
+  hosts: localhost
+  gather_facts: false
+  # Stop play on any error.
+  any_errors_fatal: true
+  # become: true
+  # become_user: cordys
+  vars:
+    filebeat_folder: /opt/myapps/filebeat
+    filebeat_folder_user: jerryhopper
+    filebeat_folder_group: jerryhopper
+    xfilebeat_download: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.2-linux-x86_64.tar.gz
+    filebeat_download: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.2-linux-arm64.tar.gz
+  tasks:
+    #############################################################
+    # Set rootfolder variable 'filebeatpath'
+    #
+    # CHECK BLUERIQ
+    - name: "Check Blueriq folder"
+      ansible.builtin.stat:
+        path: "/opt/blueriq"
+      register: register_folder_blueriq
+    - name: "BLUERIQ SPECIFIEK"
+      when: register_folder_blueriq.stat.exists
+      block:
+        - name: SetVar
+          ansible.builtin.debug:
+            msg: "filebeatpath=/opt/blueriq/filebeat"
+        - name: setfact
+          ansible.builtin.set_fact:
+            filebeat_folder: "/opt/blueriq/filebeat"
+    # CHECK CORDYS
+    - name: Check Cordys folder
+      ansible.builtin.stat:
+        path: "/opt/cordys"
+      register: register_folder_cordys
+    - name: CORDYS SPECIFIEK
+      block:
+        - name: SetVar
+          ansible.builtin.debug:
+            msg: "filebeatpath=/opt/cordys/filebeat"
+        - name: setfact
+          ansible.builtin.set_fact:
+            filebeat_folder: "/opt/cordys/filebeat"
+      when: register_folder_cordys.stat.exists
+    #
+    #
+    #
+    #############################################################
+    - name: debug
+      ansible.builtin.debug:
+        msg: "filebeat_folder={{ filebeat_folder }}"
+    # CHECK CERTSFOLDER
+    - name: Check certs subfolder
+      ansible.builtin.stat:
+        path: "{{ filebeat_folder }}/certs"
+      register: register_folder_filebeatcerts
+    #############################################################
+    # CREATE CERTS FOLDER IF NOT EXISTS
+    #- name: Create ./filebeat/certs folder if not exists.
+    #  block:
+    - name: Create ./filebeat/certs folder if not exists.
+      ansible.builtin.file:
+        path: "{{ filebeat_folder }}/certs"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0644'
+      when: not register_folder_filebeatcerts.stat.exists
+    
+    #############################################################
+    # NORMALIZE FILE/FOLDER STRUCTURE.
+    # PLACE CERTIFICATES IN SUBDIR ./certs
+    #
+    # MOVE ca.crt to ./certs
+    - name: Check file ca.crt 
+      ansible.builtin.stat:
+        path: "{{ filebeat_folder }}/ca.crt"
+      register: register_folder_filebeatcert_ca
+    # COPY THAT ca.crt
+    - name: Copy ca.crt to ./certs with owner and permissions
+      ansible.builtin.copy:
+        src: "{{ filebeat_folder }}/ca.crt"
+        dest: "{{ filebeat_folder }}/certs/ca.crt"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0644'
+      when: register_folder_filebeatcert_ca.stat.exists
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+          path: "{{ filebeat_folder }}/ca.crt"
+          state: absent
+      when: register_folder_filebeatcert_ca.stat.exists
+    #############################################################
+    # client.crt  
+    - name: Check file client.crt  
+      ansible.builtin.stat:
+        path: "{{ filebeat_folder }}/client.crt"
+      register: register_folder_filebeatcert_client
+    # COPY THAT client.crt
+    - name: Copy client.crt to ./certs with owner and permissions
+      ansible.builtin.copy:
+        src: "{{ filebeat_folder }}/client.crt"
+        dest: "{{ filebeat_folder }}/certs/client.crt"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0644'
+      when: register_folder_filebeatcert_client.stat.exists
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+          path: "{{ filebeat_folder }}/client.crt"
+          state: absent
+      when: register_folder_filebeatcert_client.stat.exists
+    #############################################################
+    # client.key  
+    - name: Check file client.key  
+      ansible.builtin.stat:
+        path: "{{ filebeat_folder }}/client.key"
+      register: register_folder_filebeatcert_clientkey
+    # COPY THAT client.key
+    - name: Copy client.key to ./certs with owner and permissions
+      ansible.builtin.copy:
+        src: "{{ filebeat_folder }}/client.key"
+        dest: "{{ filebeat_folder }}/certs/client.key"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0644'
+      when: register_folder_filebeatcert_clientkey.stat.exists
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+          path: "{{ filebeat_folder }}/client.key"
+          state: absent
+      when: register_folder_filebeatcert_clientkey.stat.exists
+
+    - name: Backup original filebeat.yml configuration
+      ansible.builtin.copy:
+        src: "{{ filebeat_folder }}/filebeat.yml"
+        dest: "{{ filebeat_folder }}/filebeat.yml.backup"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0644'
+        #backup: yes
+    #############################################################
+
+
+    - name: Unarchive a file that needs to be downloaded
+      ansible.builtin.unarchive:
+        src: "{{ filebeat_download }}"
+        dest: "{{ filebeat_folder  }}"
+        remote_src: yes
+        extra_opts:
+          - --strip-components=1
+    - name: Change permissions on /remote/file/path to ansible:user so we can write to it
+      ansible.builtin.file:
+        path: "{{ filebeat_folder  }}"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        recurse: true
+        mode: "0755"
+
+    - name: Restore original filebeat.yml configuration
+      ansible.builtin.copy:
+        src: "{{ filebeat_folder }}/filebeat.yml.backup"
+        dest: "{{ filebeat_folder }}/filebeat.yml"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0644'
+        #backup: yes
+    #############################################################
+
+
+    - name: Enable cert authorities
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: 'ssl.certificate_authorities'
+        line: "  ssl.certificate_authorities: [\"{{ filebeat_folder  }}/certs/ca.crt\"]"
+    - name: Enable cert authorities
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: 'ssl.certificate'
+        line: "  ssl.certificate: \"{{ filebeat_folder  }}/certs/cert.crt\""
+    - name: Enable cert authorities
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: 'ssl.key'
+        line: "  ssl.key: \"{{ filebeat_folder  }}/certs/cert.key\""

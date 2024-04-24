@@ -1,0 +1,84 @@
+- name: "filebeat.install.playbook.yml"
+  hosts: localhost
+  gather_facts: false
+  # Stop play on any error.
+  any_errors_fatal: true
+  # become: true
+  # become_user: cordys
+  vars:
+    filebeat_folder: /opt/cordys/filebeat
+    filebeat_folder_user: jerryhopper
+    filebeat_folder_group: jerryhopper
+    filebeat_download: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.2-linux-x86_64.tar.gz
+    filebeat_conf_logstash_hosts: "\"10.50.112.80:5044\", \"10.50.112.84:5044\", \"10.50.112.78:5044\""
+    # web_cert_port: 443
+    #########################
+    # debug: false
+    # role_action: "cert_check_web"
+  tasks:
+    #############################################################
+    # Set rootfolder variable 'filebeatpath'
+    #
+    # CHECK BLUERIQ
+    - name: "Check filebeat folder"
+      ansible.builtin.stat:
+        path: "{{ filebeat_folder }}"
+      register: register_filebeat_folder
+    - name: Filebeat folder exists!
+      ansible.builtin.fail:
+        msg: "Filebeat folder exists!"
+      when: register_filebeat_folder.stat.exists
+    - name: Make dir
+      ansible.builtin.file:
+        state: directory
+        path: "{{ filebeat_folder }}"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0755'
+    - name: Make certs subdir
+      ansible.builtin.file:
+        state: directory
+        path: "{{ filebeat_folder }}/certs"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        mode: '0755'
+    - name: Unarchive a file that needs to be downloaded
+      ansible.builtin.unarchive:
+        src: "{{ filebeat_download }}"
+        dest: "{{ filebeat_folder  }}"
+        remote_src: yes
+        extra_opts:
+          - --strip-components=1
+    - name: Change permissions on /remote/file/path to ansible:user so we can write to it
+      ansible.builtin.file:
+        path: "{{ filebeat_folder  }}"
+        owner: "{{ filebeat_folder_user }}"
+        group: "{{ filebeat_folder_group }}"
+        recurse: true
+        mode: "0755"
+    - name: Enable SSL
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: '^#output.logstash:'
+        line: "output.logstash:"
+    - name: Add hosts
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: 'localhost:5044'
+        line: "  hosts: [ {{ filebeat_conf_logstash_hosts }} ]  "
+    - name: Enable cert authorities
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: 'ssl.certificate_authorities'
+        line: "  ssl.certificate_authorities: [\"{{ filebeat_folder  }}/certs/ca.pem\"]"
+    - name: Enable cert authorities
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: 'ssl.certificate'
+        line: "  ssl.certificate: \"{{ filebeat_folder  }}/certs/cert.pem\""
+    - name: Enable cert authorities
+      ansible.builtin.lineinfile:
+        path: "{{ filebeat_folder  }}/filebeat.yml"
+        regexp: 'ssl.key'
+        line: "  ssl.key: \"{{ filebeat_folder  }}/certs/cert.key\""
+
