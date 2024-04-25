@@ -1,5 +1,5 @@
 - name: "filebeat.install.playbook.yml"
-  hosts: localhost
+  hosts: "{{ targethosts }}"
   gather_facts: false
   # Stop play on any error.
   any_errors_fatal: true

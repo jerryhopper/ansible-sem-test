@@ -1,5 +1,5 @@
 - name: "Filebeat.upgrade.playbook.yml"
-  hosts: localhost
+  hosts: "{{ targethosts }}"
   gather_facts: false
   # Stop play on any error.
   any_errors_fatal: true
@@ -13,8 +13,8 @@
     filebeat_download: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.2-linux-arm64.tar.gz
   tasks:
     #############################################################
-    # Set rootfolder variable 'filebeatpath'
-    #
+    # This section will check if the machine serves cordys/blueriq, and override the variable 'filebeat_folder'
+    # 
     # CHECK BLUERIQ
     - name: "Check Blueriq folder"
       ansible.builtin.stat:
@@ -43,7 +43,7 @@
           ansible.builtin.set_fact:
             filebeat_folder: "/opt/cordys/filebeat"
       when: register_folder_cordys.stat.exists
-    #
+    # end of filebeat/cordys detection.
     #
     #
     #############################################################
