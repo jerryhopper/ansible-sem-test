@@ -177,9 +177,9 @@
       ansible.builtin.lineinfile:
         path: "{{ filebeat_folder  }}/filebeat.yml"
         regexp: 'ssl.certificate'
-        line: "  ssl.certificate: \"{{ filebeat_folder  }}/certs/cert.crt\""
+        line: "  ssl.certificate: \"{{ filebeat_folder  }}/certs/client.crt\""
     - name: Enable cert authorities
       ansible.builtin.lineinfile:
         path: "{{ filebeat_folder  }}/filebeat.yml"
         regexp: 'ssl.key'
-        line: "  ssl.key: \"{{ filebeat_folder  }}/certs/cert.key\""
+        line: "  ssl.key: \"{{ filebeat_folder  }}/certs/client.key\""
